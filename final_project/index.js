@@ -11,7 +11,36 @@ app.use(express.json());
 app.use("/customer",session({secret:"fingerprint_customer",resave: true, saveUninitialized: true}))
 
 app.use("/customer/auth/*", function auth(req,res,next){
-//Write the authenication mechanism here
+    // Check if user has an active session
+    if (req.session && req.session.authorized) {
+        // Check if access token exists and is valid
+        if (req.session.token) {
+            try {
+                // Verify the token 
+                if (req.session.token === req.headers.authorization) {
+                    // Token is valid, proceed to next middleware
+                    next();
+                } else {
+                    res.status(401).json({
+                        message: "Invalid token"
+                    });
+                }
+            } catch (err) {
+                res.status(401).json({
+                    message: "Token verification failed",
+                    error: err.message
+                });
+            }
+        } else {
+            res.status(401).json({
+                message: "No token provided"
+            });
+        }
+    } else {
+        res.status(401).json({
+            message: "Unauthorized access. Please login first."
+        });
+    }
 });
  
 const PORT =5000;
