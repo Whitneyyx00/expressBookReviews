@@ -114,8 +114,47 @@ public_users.get('/author/:author',function (req, res) {
 
 // Get all books based on title
 public_users.get('/title/:title',function (req, res) {
-  //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
+    try {
+        // Get title from request parameters
+        const requestedTitle = req.params.title;
+
+        // Check if title parameter is provided
+        if (!requestedTitle) {
+            return res.status(400).json({
+                message: "Title parameter is required"
+            });
+        }
+
+        // Get all book ISBNs
+        const bookISBNs = Object.keys(books);
+
+        // Filter books by the requested title
+        const titleBooks = bookISBNs.reduce((result, isbn) => {
+            // Case insensitive comparison and includes partial matches
+            if (books[isbn].title.toLowerCase().includes(requestedTitle.toLowerCase())) {
+                result[isbn] = books[isbn];
+            }
+            return result;
+        }, {});
+
+        // Check if any books were found
+        if (Object.keys(titleBooks).length > 0) {
+            return res.status(200).json({
+                message: "Books found with title: " + requestedTitle,
+                books: titleBooks,
+                total_books: Object.keys(titleBooks).length
+            });
+        } else {
+            return res.status(404).json({
+                message: "No books found with title: " + requestedTitle
+            });
+        }
+    } catch (error) {
+        return res.status(500).json({
+            message: "Error retrieving books",
+            error: error.message
+        });
+    }
 });
 
 //  Get book review
