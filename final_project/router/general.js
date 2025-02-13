@@ -159,8 +159,47 @@ public_users.get('/title/:title',function (req, res) {
 
 //  Get book review
 public_users.get('/review/:isbn',function (req, res) {
-  //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
+    try {
+        // Get ISBN from request parameters
+        const isbn = req.params.isbn;
+
+        // Check if ISBN parameter is provided
+        if (!isbn) {
+            return res.status(400).json({
+                message: "ISBN parameter is required"
+            });
+        }
+
+        // Check if book exists
+        if (!books[isbn]) {
+            return res.status(404).json({
+                message: "Book not found with ISBN: " + isbn
+            });
+        }
+
+        // Get reviews for the book
+        const bookReviews = books[isbn].reviews;
+
+        // Check if book has any reviews
+        if (bookReviews && Object.keys(bookReviews).length > 0) {
+            return res.status(200).json({
+                message: "Reviews found for ISBN: " + isbn,
+                book_title: books[isbn].title,
+                reviews: bookReviews,
+                total_reviews: Object.keys(bookReviews).length
+            });
+        } else {
+            return res.status(404).json({
+                message: "No reviews found for ISBN: " + isbn,
+                book_title: books[isbn].title
+            });
+        }
+    } catch (error) {
+        return res.status(500).json({
+            message: "Error retrieving book reviews",
+            error: error.message
+        });
+    }
 });
 
 module.exports.general = public_users;
