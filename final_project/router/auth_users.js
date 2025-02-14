@@ -62,8 +62,60 @@ regd_users.post("/login", (req,res) => {
 
 // Add a book review
 regd_users.put("/auth/review/:isbn", (req, res) => {
-  //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
+    try {
+        // Get ISBN from request parameters
+        const isbn = req.params.isbn;
+
+        // Get reviews from request query
+        const review = req.query.review;
+
+        // Get username from session (assuming JWT token is verified and username is stored in the session)
+        const username = req.username;
+
+        // Check if ISBN exists in books
+        if (!books[isbn]) {
+            return res.status(404).json({
+                message: "Book not found with ISBN: " + isbn
+            });
+        }
+
+        // Check if review is provided
+        if (!review) {
+            return res.status(400).json({
+                message: "Review is required"
+            });
+        }
+
+        // Check if username is provided (should be stored in the session)
+        if (!username) {
+            return res.status(401).json({
+                message: "You must be logged in to post a review"
+            });
+        }
+
+        // Add or modify review
+        if (books[isbn].reviews && books[isbn].reviews[username]) {
+            // Modify existing review
+            books[isbn].reviews[username] = review;
+        } else {
+            // Add new review
+            if (!books[isbn].reviews) {
+                books[isbn].reviews = {};
+            }
+            books[isbn].reviews[username] = review;
+        }
+
+        return res.status(200).json({
+            message: "Review added/modified successfully",
+            isbn: isbn,
+            review: review
+        });
+    } catch (error) {
+        return res.status(500).json({
+            message: "Error adding/modifying review",
+            error: error.message
+        });
+   }
 });
 
 module.exports.authenticated = regd_users;
