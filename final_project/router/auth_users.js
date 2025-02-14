@@ -51,8 +51,12 @@ regd_users.post("/login", (req,res) => {
         return res.status(200).json({
             message: "Login successful",
             token: token
-          ;  
-        })
+        });
+    } catch (error) {
+        return res.status(500).json({
+            message: "Error during login",
+            error: error.message
+        });
     }
 });
 
