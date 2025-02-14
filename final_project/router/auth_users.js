@@ -118,6 +118,56 @@ regd_users.put("/auth/review/:isbn", (req, res) => {
    }
 });
 
+regd_users.delete("/auth/review/:isbn", (req, res) => {
+    try {
+        // Get ISBN from request parameters
+        const isbn = req.params.isbn;
+
+        // Get username from session (assuming JWT token is verified and username is stored in the session)
+        const username = req.username;
+
+        // Check is ISBN exists in books
+        if (!books[isbn]) {
+            return res.status(404).json({
+                message: "Book not found with ISBN: " + isbn
+            });
+        }
+
+        // Check if username is provided (should be stored in the session)
+        if (!username) {
+            return res.status(401).json({
+                message: "You must be logged in to delete a review"
+            });
+        }
+
+        // Check if review exists for the user
+        if (books[isbn].reviews && books[isbn].reviews[username]) {
+            // Delete review
+            delete books[isbn].reviews[username];
+
+            // Check if reviews object is empty
+            if (Object.keys(books[isbn].reviews).length === 0) {
+                // Delete reviews object
+                delete books[isbn].reviews;
+            }
+
+            return res.status(200).json({
+                message: "Review deleted successfully",
+                isbn: isbn
+            });
+        } else {
+            return res.status(404).json({
+                message: "No review found for ISBN: " + isbn + " and username: " + username
+            });
+        }
+    } catch (error) {
+        return res.status(500).json({
+            message: "Error deleting review",
+            error: error.message
+        });
+    }
+});
+
 module.exports.authenticated = regd_users;
 module.exports.isValid = isValid;
 module.exports.users = users;
