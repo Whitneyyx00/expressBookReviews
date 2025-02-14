@@ -1,4 +1,5 @@
 const express = require('express');
+const axios = require("axios");
 let books = require("./booksdb.js");
 let isValid = require("./auth_users.js").isValid;
 let users = require("./auth_users.js").users;
@@ -66,14 +67,10 @@ public_users.post("/register", (req,res) => {
 });
 
 // Get the book list available in the shop
-public_users.get('/',function (req, res) {
+public_users.get('/', async function (req, res) {
     try {
-        // Check if books object is not empty
-        if (Object.keys(books).length === 0) {
-            return res.status(404).json({
-                message: "No books available"
-            });
-        }
+        const response = await axios.get("http://localhost:5000/api/books");
+        const books = response.data;
 
         // Convert the books object to a formatted string
         const booksList = JSON.stringify(books, null, 2);
@@ -93,23 +90,19 @@ public_users.get('/',function (req, res) {
 });
 
 // Get book details based on ISBN
-public_users.get('/isbn/:isbn',function (req, res) {
+public_users.get('/isbn/:isbn', async function (req, res) {
     try {
         // Get ISBN from request parameters
         const isbn = req.params.isbn;
 
-        // Check if ISBN is provided
-        if (!isbn) {
-            return res.status(400).json({
-                message: "ISBN parameter is required"
-            });
-        }
+        // Use Axios to make a GET request to the book endpoint
+        const response = await axios.get(`http://localhost:5000/api/books/${isbn}`);
 
-        // Check if book with ISBN exists
-        if (books[isbn]) {
+        // Check if book exists
+        if (response.data) {
             return res.status(200).json({
                 message: "Book found successfully",
-                book: books[isbn]
+                book: response.data
             });
         } else {
             return res.status(404).json({
@@ -117,49 +110,39 @@ public_users.get('/isbn/:isbn',function (req, res) {
             });
         }
     } catch (error) {
+        // Handle any unexpected errors
         return res.status(500).json({
-            message: "Error retrieving book details",
+            message: "Error retrieving book",
             error: error.message
         });
     }
  });
   
 // Get book details based on author
-public_users.get('/author/:author',function (req, res) {
+public_users.get('/author/:author', async function (req, res) {
     try {
         // Get author from request parameters
-        const requestedAuthor = req.params.author;
+        const author = req.params.author;
 
-        // Check if author parameter is provided
-        if (!requestedAuthor) {
-            return res.status(400).json({
-                message: "Author parameter is required"
-            });
-        }
+        // Use Axios to make a GET request to the books endpoint
+        const response = await axios.get("http://localhost:5000/api/books");
 
-        // Get all book ISBNs
-        const bookISBNs = Object.keys(books);
-
-        // Filter books by the requested author
-        const authorBooks = bookISBNs.reduce((result, isbn) => {
-            if (books[isbn].author.toLowerCase() === requestedAuthor.toLowerCase()) {
-                result[isbn] = books[isbn];
-            }
-            return result;
-        }, {});
+        // Filter books by author
+        const authorBooks = response.data.filter(book => book.author.toLowerCase() === author.toLowerCase());
 
         // Check if any books were found
-        if (Object.keys(authorBooks).length > 0) {
+        if (authorBooks.length > 0) {
             return res.status(200).json({
-                message: "Books found for author: " + requestedAuthor,
+                message: "Books found for author: " + author,
                 books: authorBooks
             });
         } else {
             return res.status(404).json({
-                message: "No books found for author: " + requestedAuthor
+                message: "No books found for author: " + author
             });
         }
     } catch (error) {
+        // Handle any unexpected errors
         return res.status(500).json({
             message: "Error retrieving books",
             error: error.message
@@ -168,43 +151,31 @@ public_users.get('/author/:author',function (req, res) {
 });
 
 // Get all books based on title
-public_users.get('/title/:title',function (req, res) {
+public_users.get('/title/:title', async function (req, res) {
     try {
         // Get title from request parameters
-        const requestedTitle = req.params.title;
+        const title = req.params.title;
 
-        // Check if title parameter is provided
-        if (!requestedTitle) {
-            return res.status(400).json({
-                message: "Title parameter is required"
-            });
-        }
+        // Use Axios to make a GET request to the books endpoint
+        const response = await axios.get("http://localhost:5000/api/books");
 
-        // Get all book ISBNs
-        const bookISBNs = Object.keys(books);
-
-        // Filter books by the requested title
-        const titleBooks = bookISBNs.reduce((result, isbn) => {
-            // Case insensitive comparison and includes partial matches
-            if (books[isbn].title.toLowerCase().includes(requestedTitle.toLowerCase())) {
-                result[isbn] = books[isbn];
-            }
-            return result;
-        }, {});
+        // Filter books by title
+        const titleBooks = response.data.filter(book => book.title.toLowerCase().includes(title.toLocaleLowerCase()));
 
         // Check if any books were found
-        if (Object.keys(titleBooks).length > 0) {
+        if (titleBooks.length > 0) {
             return res.status(200).json({
-                message: "Books found with title: " + requestedTitle,
+                message: "Books found with title: " + title,
                 books: titleBooks,
-                total_books: Object.keys(titleBooks).length
+                total_books: titleBooks.length
             });
         } else {
             return res.status(404).json({
-                message: "No books found with title: " + requestedTitle
+                message: "No books found with title: " + title
             });
         }
     } catch (error) {
+        // Handle any unexpected errors
         return res.status(500).json({
             message: "Error retrieving books",
             error: error.message
